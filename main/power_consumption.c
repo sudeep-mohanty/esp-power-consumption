@@ -138,12 +138,12 @@ static void got_ip_handler(void *arg, esp_event_base_t event_base,
     xEventGroupClearBits(wifi_event_group, DISCONNECTED_BIT);
     xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
 
+#if CONFIG_EXAMPLE_TWT_ENABLE
     /* setup a trigger-based announce individual TWT agreement. */
     wifi_phy_mode_t phymode;
     wifi_config_t sta_cfg = { 0, };
     esp_wifi_get_config(WIFI_IF_STA, &sta_cfg);
     esp_wifi_sta_get_negotiated_phymode(&phymode);
-#if CONFIG_EXAMPLE_TWT_ENABLE
     if (phymode == WIFI_PHY_MODE_HE20) {
         esp_err_t err = ESP_OK;
         int flow_id = 0;
@@ -319,7 +319,7 @@ void pwr_con(void *arg)
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
 #elif CONFIG_EXAMPLE_MODEM_SLEEP_MAX
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MAX_MODEM));
-#else
+#elif CONFIG_EXAMPLE_MODEM_SLEEP_NONE
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 #endif /* CONFIG_EXAMPLE_WIFI_PS_MIN */
 
@@ -348,37 +348,33 @@ void pwr_con(void *arg)
     while (1) {
         /* Wait until sta is connected */
         while (sta_connected == false) {
-            vTaskDelay(1000);
+            vTaskDelay(1);
         }
-        
-        /* Wait for IP assignment */
-        vTaskDelay(10000);
 
         /* Enter Light Sleep */
         ESP_LOGI(TAG, "Entering Light Sleep Mode");
-        ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(10000000));
+        ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(CONFIG_EXAMPLE_SLEEP_TIME_US));
         esp_light_sleep_start();
         if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER) {
             ESP_LOGI(TAG, "Wakeup from timer");
         } else {
             ESP_LOGW(TAG, "Unknown wakeup cause %d\n", esp_sleep_get_wakeup_cause());
         }
+
+        esp_wifi_connect();
     }
 #endif /* CONFIG_EXAMPLE_LIGHT_SLEEP */
 
     /* Deep Sleep */
 #if CONFIG_EXAMPLE_DEEP_SLEEP
     /* Wait until sta is connected */
-    while (sta_connected == false) {
-        vTaskDelay(1000);
+    while (sta_connected != true) {
+        vTaskDelay(1);
     }
-
-    /* Wait for IP assignment */
-    vTaskDelay(10000);
 
     /* Enter Deep Sleep */
     ESP_LOGI(TAG, "Entering Deep Sleep Mode");
-    ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(10000000));
+    ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(CONFIG_EXAMPLE_SLEEP_TIME_US));
     esp_deep_sleep_start();
 #endif /* CONFIG_EXAMPLE_DEEP_SLEEP */
 

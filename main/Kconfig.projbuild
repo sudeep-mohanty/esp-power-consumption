@@ -46,6 +46,11 @@ menu "Example Configuration"
                     endchoice
         endchoice
 
+    config EXAMPLE_SLEEP_TIME_US
+        int "Light/Deep Sleep time in microseconds"
+        depends on (EXAMPLE_LIGHT_SLEEP || EXAMPLE_DEEP_SLEEP)
+        default 10000000
+
     config EXAMPLE_TWT_ENABLE
         bool "Enable Target Wake Time (TWT)"
         depends on SOC_WIFI_HE_SUPPORT
